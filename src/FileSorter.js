@@ -57,8 +57,9 @@ function groupFilesByDay(files) {
  * @return {Number}           The rounded timestamp.
  */
 function roundTimestampToDay(timestamp) {
+  timestamp = timestamp.getTime() - timezoneOffsetMS;
   timestamp -= timestamp % (24 * 60 * 60 * 1000);
-  return timestamp + timezoneOffsetMS;
+  return timestamp;
 }
 
 /**

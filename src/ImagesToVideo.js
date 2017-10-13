@@ -6,17 +6,48 @@ const { exec } = require('child_process');
 /**
  * Gets the FFMPEG concat input commands.
  * @param  {Array<String>} images List of image files to concat.
- * @param {String} frameDelay FFMPEG frame delay between each.
+ * @param {String?} frameDelay FFMPEG frame delay between each.
  * @return {String} The ffmpeg concat commands.
  */
 function getConcatInput(images, frameDelay) {
   var command = "";
   for(var image of images) {
-    command += `file '${image}'\nduration ${frameDelay}\n`
+    command += `file '${image}'\n`;
+
+    if(frameDelay) {
+      command += `duration ${frameDelay}\n`;
+    }
   }
 
-  command += `file '${images[images.length-1]}'\r\n`;
   return command;
+}
+
+/**
+ * Concatenates a list of videos.
+ * @param  {Array<String>} videos   A list of videos.
+ * @param  {String} path     The root output path of the video.
+ * @param  {String} filename The output filename of the video.
+ */
+function concatenateVideos(videos, root, filename) {
+  //ffmpeg -f concat -safe 0 -i mylist.txt -c copy output
+  return new Promise((resolve, reject) => {
+    var outputPath = path.format({
+      root:root,
+      name:filename
+    });
+
+    var concatInput = getConcatInput(videos);
+    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -i pipe: -c copy -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
+
+    console.log(`Rendering video collage ${filename}.`);
+    child.stdin.setEncoding('utf-8');
+    child.stdin.write(concatInput);
+    child.stdin.end();
+    child.on('exit', function (code, signal) {
+      console.log(`Finished rendering video collage ${filename}.`);
+      resolve(outputPath);
+    });
+  });
 }
 
 /**
@@ -32,33 +63,21 @@ function convertImagesToVideo(images, root, filename) {
       name:filename
     });
 
-    var  options = {
-      stdio: [0, 1, 2, 'ipc', 'pipe']
-    };
+    var concatInput = getConcatInput(images);
+    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r 15 -i pipe: -pix_fmt yuv420p -filter "minterpolate='fps=30'" -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
 
-    var concatInput = getConcatInput(images, 1/10);
-
-    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -i pipe: -vsync vfr -pix_fmt yuv420p -filter "minterpolate='fps=30'" -y ${outputPath}`, options);
-
+    console.log(`Rendering ${filename}.`);
     child.stdin.setEncoding('utf-8');
     child.stdin.write(concatInput);
     child.stdin.end();
-
     child.on('exit', function (code, signal) {
       console.log(`Finished rendering ${filename}.`);
-      resolve();
-    });
-
-    child.stdout.on('data', function (data) {
-      console.log('stdout: ' + data.toString());
-    });
-
-    child.stderr.on('data', function (data) {
-      console.log('stderr: ' + data.toString());
+      resolve(outputPath);
     });
   });
 }
 
 module.exports = {
-  convertImagesToVideo
+  convertImagesToVideo,
+  concatenateVideos
 };

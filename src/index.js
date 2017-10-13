@@ -14,8 +14,17 @@ const options = commandLineArgs(optionDefinitions);
 if(options.directory) {
   FileSorter.fetchGroupedImages(options.directory)
     .then((files) => {
+      var promises = [];
+
       for(group in files) {
-        ImagesToVideo.convertImagesToVideo(files[group], options.output, group + '.mp4');
+        files[group].sort();
+        promises.push(ImagesToVideo.convertImagesToVideo(files[group], options.output, group + '.mp4'));
       }
+
+      return Promise.all(promises);
+    }).then((videos) => {
+      videos.sort();
+      console.log(videos);
+      ImagesToVideo.concatenateVideos(videos, options.output, 'timelapse.mp4');
     });
 }
