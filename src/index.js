@@ -5,11 +5,18 @@ const ImagesToVideo = require('./ImagesToVideo');
 // Define the allowed command line arguments.
 const optionDefinitions = [
   { name: 'directory', alias: 'd', type: String },
-  { name: 'output', alias: 'o', type: String, default: './' }
+  { name: 'output', alias: 'o', type: String, defaultValue: './' },
+  { name: 'interpolate_fps', alias: 'i', type: Number, defaultValue: null},
+  { name: 'fps', alias: 'f', type: Number, defaultValue: 15}
 ];
 
 // Parse the command line arguments into an object.
 const options = commandLineArgs(optionDefinitions);
+
+console.log(`Frame interpolation: ${options.interpolate_fps} fps`);
+console.log(`Video FPS: ${options.fps} fps`);
+console.log(`Search directory: ${options.directory}`);
+console.log(`Output directory: ${options.output}`);
 
 if(options.directory) {
   FileSorter.fetchGroupedImages(options.directory)
@@ -17,14 +24,11 @@ if(options.directory) {
       var promises = [];
 
       for(group in files) {
-        files[group].sort();
-        promises.push(ImagesToVideo.convertImagesToVideo(files[group], options.output, group + '.mp4'));
+        promises.push(ImagesToVideo.convertImagesToVideo(files[group].sort(), options.output, group + '.mp4', options.fps, options.interpolate_fps));
       }
 
       return Promise.all(promises);
     }).then((videos) => {
-      videos.sort();
-      console.log(videos);
-      ImagesToVideo.concatenateVideos(videos, options.output, 'timelapse.mp4');
+      ImagesToVideo.concatenateVideos(videos.sort(), options.output, 'timelapse.mp4');
     });
 }

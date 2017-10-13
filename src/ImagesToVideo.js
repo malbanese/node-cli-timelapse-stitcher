@@ -55,8 +55,16 @@ function concatenateVideos(videos, root, filename) {
  * @param  {Array<String>} images   A list of images.
  * @param  {String} path     The root output path of the video.
  * @param  {String} filename The output filename of the video.
+ * @param {Number} fps The target FPS to mux the videos at.
+ * @param {Number?} interpolateFPS If provided, an interpolation will be applied
+ *                                 between frames. Should be larger than fps.
  */
-function convertImagesToVideo(images, root, filename) {
+function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
+  // Sanitary check against interpolateFPS
+  if(interpolateFPS <= 0 || interpolateFPS < fps) {
+    interpolateFPS = null;
+  }
+
   return new Promise((resolve, reject) => {
     var outputPath = path.format({
       root:root,
@@ -64,7 +72,8 @@ function convertImagesToVideo(images, root, filename) {
     });
 
     var concatInput = getConcatInput(images);
-    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r 15 -i pipe: -pix_fmt yuv420p -filter "minterpolate='fps=30'" -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
+    var interpolateFilter = (interpolateFPS) ? `-filter "minterpolate='fps=${interpolateFPS}'"` : '';
+    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r ${fps} -i pipe: -pix_fmt yuv420p ${interpolateFilter} -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
 
     console.log(`Rendering ${filename}.`);
     child.stdin.setEncoding('utf-8');
