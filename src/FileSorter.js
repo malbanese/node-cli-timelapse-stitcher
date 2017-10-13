@@ -34,7 +34,7 @@ function groupFilesByDay(files) {
         if(err) {
           return reject(err);
         }
-        var roundedTimestamp = roundTimestampToDay(stats.ctime);
+        var roundedTimestamp = roundTimestampToDay(stats.mtime);
 
         if(!fileMap[roundedTimestamp]) {
           fileMap[roundedTimestamp] = [];

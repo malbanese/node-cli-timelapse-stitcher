@@ -37,7 +37,7 @@ function concatenateVideos(videos, root, filename) {
     });
 
     var concatInput = getConcatInput(videos);
-    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -i pipe: -c copy -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
+    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -i pipe: -c:v libx264 -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
 
     console.log(`Rendering video collage ${filename}.`);
     child.stdin.setEncoding('utf-8');
