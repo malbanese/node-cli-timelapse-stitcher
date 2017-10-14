@@ -1,7 +1,7 @@
 const path = require('path');
 const { spawn } = require('child_process');
 const { exec } = require('child_process');
-
+const CacheChecker = require('./CacheChecker');
 
 /**
  * Gets the FFMPEG concat input commands.
@@ -27,6 +27,7 @@ function getConcatInput(images, frameDelay) {
  * @param  {Array<String>} videos   A list of videos.
  * @param  {String} path     The root output path of the video.
  * @param  {String} filename The output filename of the video.
+ * @return {Promise} Promise that resolves with the full output path.
  */
 function concatenateVideos(videos, root, filename) {
   //ffmpeg -f concat -safe 0 -i mylist.txt -c copy output
@@ -58,6 +59,7 @@ function concatenateVideos(videos, root, filename) {
  * @param {Number} fps The target FPS to mux the videos at.
  * @param {Number?} interpolateFPS If provided, an interpolation will be applied
  *                                 between frames. Should be larger than fps.
+ * @return {Promise} Promise that resolves with the full output path.
  */
 function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
   // Sanitary check against interpolateFPS
@@ -71,17 +73,24 @@ function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
       name:filename
     });
 
-    var concatInput = getConcatInput(images);
-    var interpolateFilter = (interpolateFPS) ? `-filter "minterpolate='fps=${interpolateFPS}'"` : '';
-    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r ${fps} -i pipe: -pix_fmt yuv420p ${interpolateFilter} -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
+    CacheChecker.isVideoCached(outputPath).then((cached) => {
+      if(cached) {
+        console.log(`${outputPath} is cached, skipping...`);
+        return resolve(outputPath)
+      }
 
-    console.log(`Rendering ${filename}.`);
-    child.stdin.setEncoding('utf-8');
-    child.stdin.write(concatInput);
-    child.stdin.end();
-    child.on('exit', function (code, signal) {
-      console.log(`Finished rendering ${filename}.`);
-      resolve(outputPath);
+      var concatInput = getConcatInput(images);
+      var interpolateFilter = (interpolateFPS) ? `-filter "minterpolate='fps=${interpolateFPS}'"` : '';
+      var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r ${fps} -i pipe: -pix_fmt yuv420p ${interpolateFilter} -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
+
+      console.log(`Rendering ${filename}...`);
+      child.stdin.setEncoding('utf-8');
+      child.stdin.write(concatInput);
+      child.stdin.end();
+      child.on('exit', function (code, signal) {
+        console.log(`Finished rendering ${filename}.`);
+        resolve(outputPath);
+      });
     });
   });
 }
