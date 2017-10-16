@@ -30,6 +30,8 @@ function getConcatInput(images, frameDelay) {
  * @return {Promise} Promise that resolves with the full output path.
  */
 function concatenateVideos(videos, root, filename) {
+  let startTime = (new Date()).getTime();
+
   //ffmpeg -f concat -safe 0 -i mylist.txt -c copy output
   return new Promise((resolve, reject) => {
     var outputPath = path.format({
@@ -45,7 +47,8 @@ function concatenateVideos(videos, root, filename) {
     child.stdin.write(concatInput);
     child.stdin.end();
     child.on('exit', function (code, signal) {
-      console.log(`Finished rendering video collage ${filename}.`);
+      let endTime = (new Date()).getTime();
+      console.log(`Finished rendering video collage ${filename} in ${endTime - startTime} ms.`);
       resolve(outputPath);
     });
   });
@@ -62,6 +65,8 @@ function concatenateVideos(videos, root, filename) {
  * @return {Promise} Promise that resolves with the full output path.
  */
 function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
+  let startTime = (new Date()).getTime();
+
   // Sanitary check against interpolateFPS
   if(interpolateFPS <= 0 || interpolateFPS < fps) {
     interpolateFPS = null;
@@ -88,7 +93,8 @@ function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
       child.stdin.write(concatInput);
       child.stdin.end();
       child.on('exit', function (code, signal) {
-        console.log(`Finished rendering ${filename}.`);
+        let endTime = (new Date()).getTime();
+        console.log(`Finished rendering ${filename} in ${endTime - startTime} ms.`);
         resolve(outputPath);
       });
     });

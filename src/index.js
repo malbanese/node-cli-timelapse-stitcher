@@ -19,6 +19,8 @@ console.log(`Search directory: ${options.directory}`);
 console.log(`Output directory: ${options.output}`);
 
 if(options.directory) {
+  let startTime = (new Date()).getTime();
+
   FileSorter.fetchGroupedImages(options.directory)
     .then((files) => {
       var promises = [];
@@ -29,6 +31,9 @@ if(options.directory) {
 
       return Promise.all(promises);
     }).then((videos) => {
-      ImagesToVideo.concatenateVideos(videos.sort(), options.output, 'timelapse.mp4');
+      ImagesToVideo.concatenateVideos(videos.sort(), options.output, 'timelapse.mp4').then(() => {
+        let endTime = (new Date()).getTime();
+        console.log(`Rendering complete, total time: ${endTime - startTime} ms.`);
+      });
     });
 }
