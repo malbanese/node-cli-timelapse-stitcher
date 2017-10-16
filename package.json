@@ -10,7 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "command-line-args": "^4.0.7",
-    "fluent-ffmpeg": "^2.1.2",
     "glob": "^7.1.2"
   }
 }
