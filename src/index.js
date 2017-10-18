@@ -8,7 +8,8 @@ const optionDefinitions = [
   { name: 'directory', alias: 'd', type: String },
   { name: 'output', alias: 'o', type: String, defaultValue: './' },
   { name: 'interpolate_fps', alias: 'i', type: Number, defaultValue: null},
-  { name: 'fps', alias: 'f', type: Number, defaultValue: 15}
+  { name: 'fps', alias: 'f', type: Number, defaultValue: 15},
+  { name: 'ignore_cache', alias: 'c', type: Boolean}
 ];
 
 // Parse the command line arguments into an object.
@@ -39,7 +40,7 @@ if(options.directory) {
         console.log('All videos were cached, skipping timelapse render.');
         return;
       }
-      
+
       return ImagesToVideo.concatenateVideos(cache.getVideoArray(), options.output, 'timelapse.mp4').then(() => {
         let endTime = (new Date()).getTime();
         console.log(`Rendering complete, total time: ${endTime - startTime} ms.`);

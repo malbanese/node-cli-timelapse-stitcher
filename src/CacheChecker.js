@@ -96,8 +96,17 @@ class TimelapseCache {
     return this.getPreviousCacheFilePromise().then((cache) => {
       var currentGroupKeys = Object.keys(this.groupedFiles);
 
-      // First check to see if our options are different.
-      if(!cache || !deepEqual(this.getCacheObject().options, cache.options)) {
+      if(this.options.ignore_cache) {
+        console.log('Ignoring cache...');
+        return currentGroupKeys;
+      }
+
+      if(!cache) {
+        console.log('No previous cache...');
+        return currentGroupKeys;
+      }
+
+      if(!deepEqual(this.options, cache.options)) {
         console.log('Options are different from the previous render, dumping cache...');
         return currentGroupKeys;
       }
