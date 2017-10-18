@@ -72,6 +72,10 @@ function fetchGroupedImages(root) {
   return new Promise((resolve, reject) => {
     fetchFileNames(root).then((files) => {
       groupFilesByDay(files).then((sortedFiles) => {
+        for(var group in sortedFiles) {
+          sortedFiles[group].sort();
+        }
+
         resolve(sortedFiles);
       })
     });

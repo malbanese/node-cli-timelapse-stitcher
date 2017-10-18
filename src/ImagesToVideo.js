@@ -78,25 +78,18 @@ function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
       name:filename
     });
 
-    CacheChecker.isVideoCached(outputPath).then((cached) => {
-      if(cached) {
-        console.log(`${outputPath} is cached, skipping...`);
-        return resolve(outputPath)
-      }
+    var concatInput = getConcatInput(images);
+    var interpolateFilter = (interpolateFPS) ? `-filter "minterpolate='fps=${interpolateFPS}'"` : '';
+    var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r ${fps} -i pipe: -pix_fmt yuv420p ${interpolateFilter} -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
 
-      var concatInput = getConcatInput(images);
-      var interpolateFilter = (interpolateFPS) ? `-filter "minterpolate='fps=${interpolateFPS}'"` : '';
-      var child = exec(`ffmpeg -f concat -safe 0 -protocol_whitelist "file,pipe" -r ${fps} -i pipe: -pix_fmt yuv420p ${interpolateFilter} -y ${outputPath}`, [0, 1, 2, 'ipc', 'pipe']);
-
-      console.log(`Rendering ${filename}...`);
-      child.stdin.setEncoding('utf-8');
-      child.stdin.write(concatInput);
-      child.stdin.end();
-      child.on('exit', function (code, signal) {
-        let endTime = (new Date()).getTime();
-        console.log(`Finished rendering ${filename} in ${endTime - startTime} ms.`);
-        resolve(outputPath);
-      });
+    console.log(`Rendering ${filename}...`);
+    child.stdin.setEncoding('utf-8');
+    child.stdin.write(concatInput);
+    child.stdin.end();
+    child.on('exit', function (code, signal) {
+      let endTime = (new Date()).getTime();
+      console.log(`Finished rendering ${filename} in ${endTime - startTime} ms.`);
+      resolve(outputPath);
     });
   });
 }

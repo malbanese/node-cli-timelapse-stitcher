@@ -1,6 +1,7 @@
 const commandLineArgs = require('command-line-args');
 const FileSorter = require('./FileSorter');
 const ImagesToVideo = require('./ImagesToVideo');
+const CacheChecker = require('./CacheChecker');
 
 // Define the allowed command line arguments.
 const optionDefinitions = [
@@ -19,21 +20,32 @@ console.log(`Search directory: ${options.directory}`);
 console.log(`Output directory: ${options.output}`);
 
 if(options.directory) {
+  let cache = new CacheChecker.TimelapseCache(options);
   let startTime = (new Date()).getTime();
 
-  FileSorter.fetchGroupedImages(options.directory)
-    .then((files) => {
-      var promises = [];
+  FileSorter.fetchGroupedImages(options.directory).then((files) => {
+      cache.setGroupedFiles(files);
+      return cache.getGroupsNeedingRendering(files).then((renderGroups) => {
+        var promises = [];
+        for(var group of renderGroups) {
+          promises.push(ImagesToVideo.convertImagesToVideo(files[group], options.output, group + '.mp4', options.fps, options.interpolate_fps));
+        }
 
-      for(group in files) {
-        promises.push(ImagesToVideo.convertImagesToVideo(files[group].sort(), options.output, group + '.mp4', options.fps, options.interpolate_fps));
+        return Promise.all(promises);
+      });
+    })
+    .then((videos) => {
+      if(videos.length == 0) {
+        console.log('All videos were cached, skipping timelapse render.');
+        return;
       }
-
-      return Promise.all(promises);
-    }).then((videos) => {
-      ImagesToVideo.concatenateVideos(videos.sort(), options.output, 'timelapse.mp4').then(() => {
+      
+      return ImagesToVideo.concatenateVideos(cache.getVideoArray(), options.output, 'timelapse.mp4').then(() => {
         let endTime = (new Date()).getTime();
         console.log(`Rendering complete, total time: ${endTime - startTime} ms.`);
       });
+    })
+    .then(() => {
+      return cache.writeCacheFile();
     });
 }
