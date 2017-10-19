@@ -30,7 +30,7 @@ class TimelapseCache {
    */
   getOutputPath() {
     return path.format({
-      root:this.options.output,
+      dir:this.options.output,
       name:'.timelapseCache'
     });
   }
@@ -63,7 +63,7 @@ class TimelapseCache {
   getVideoArray() {
     return Object.keys(this.groupedFiles).map((file) => {
       return path.format({
-        root:this.options.output,
+        dir:this.options.output,
         name:`${file}.mp4`
       });
     }).sort();

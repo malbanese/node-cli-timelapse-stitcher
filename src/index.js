@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const commandLineArgs = require('command-line-args');
 const FileSorter = require('./FileSorter');
 const ImagesToVideo = require('./ImagesToVideo');
@@ -15,12 +17,14 @@ const optionDefinitions = [
 // Parse the command line arguments into an object.
 const options = commandLineArgs(optionDefinitions);
 
-console.log(`Frame interpolation: ${options.interpolate_fps} fps`);
-console.log(`Video FPS: ${options.fps} fps`);
-console.log(`Search directory: ${options.directory}`);
-console.log(`Output directory: ${options.output}`);
+if(!options.directory) {
+  console.log("Please provide a valid search directory.");
+} else {
+  console.log(`Frame interpolation: ${options.interpolate_fps} fps`);
+  console.log(`Video FPS: ${options.fps} fps`);
+  console.log(`Search directory: ${options.directory}`);
+  console.log(`Output directory: ${options.output}`);
 
-if(options.directory) {
   let cache = new CacheChecker.TimelapseCache(options);
   let startTime = (new Date()).getTime();
 

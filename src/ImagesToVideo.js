@@ -25,17 +25,17 @@ function getConcatInput(images, frameDelay) {
 /**
  * Concatenates a list of videos.
  * @param  {Array<String>} videos   A list of videos.
- * @param  {String} path     The root output path of the video.
+ * @param  {String} dir     The root output path of the video.
  * @param  {String} filename The output filename of the video.
  * @return {Promise} Promise that resolves with the full output path.
  */
-function concatenateVideos(videos, root, filename) {
+function concatenateVideos(videos, dir, filename) {
   let startTime = (new Date()).getTime();
 
   //ffmpeg -f concat -safe 0 -i mylist.txt -c copy output
   return new Promise((resolve, reject) => {
     var outputPath = path.format({
-      root:root,
+      dir,
       name:filename
     });
 
@@ -57,14 +57,14 @@ function concatenateVideos(videos, root, filename) {
 /**
  * Converts a list of images to a video.
  * @param  {Array<String>} images   A list of images.
- * @param  {String} path     The root output path of the video.
+ * @param  {String} dir     The root output path of the video.
  * @param  {String} filename The output filename of the video.
  * @param {Number} fps The target FPS to mux the videos at.
  * @param {Number?} interpolateFPS If provided, an interpolation will be applied
  *                                 between frames. Should be larger than fps.
  * @return {Promise} Promise that resolves with the full output path.
  */
-function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
+function convertImagesToVideo(images, dir, filename, fps, interpolateFPS) {
   let startTime = (new Date()).getTime();
 
   // Sanitary check against interpolateFPS
@@ -74,7 +74,7 @@ function convertImagesToVideo(images, root, filename, fps, interpolateFPS) {
 
   return new Promise((resolve, reject) => {
     var outputPath = path.format({
-      root:root,
+      dir,
       name:filename
     });
 
