@@ -11,11 +11,50 @@ const optionDefinitions = [
   { name: 'output', alias: 'o', type: String, defaultValue: './' },
   { name: 'interpolate_fps', alias: 'i', type: Number, defaultValue: null},
   { name: 'fps', alias: 'f', type: Number, defaultValue: 15},
-  { name: 'ignore_cache', alias: 'c', type: Boolean}
+  { name: 'ignore_cache', alias: 'c', type: Boolean},
+  { name: 'parallel', alias: 'p', type: Number, defaultValue: 10}
 ];
 
 // Parse the command line arguments into an object.
 const options = commandLineArgs(optionDefinitions);
+
+/**
+ * Batched render that returns a promise that processes videos in batches.
+ * Once all videos are rendered, the promise will resolve with a list of the
+ * rendered files.
+ * @param  {Number} maxParallel  The maximum number of renders at a time.
+ * @param  {Array} files        The video image files to operate upon.
+ * @param  {Array} renderGroups The groups needing rendering.
+ * @param  {Array} _videos       Should be left undefined, used in recursive calls.
+ * @return {Promise}              [description]
+ */
+function batchedRender(maxParallel, files, renderGroups, _videos) {
+  // Keep track of the gigantic videos array.
+  if(!Array.isArray(_videos)) {
+    videos = [];
+  }
+
+  // Create promise array.
+  let promises = [];
+  let renderCount = maxParallel;
+
+  // Loop through, keeping render count and length valid.
+  while(renderGroups.length && renderCount--) {
+    let group = renderGroups.pop();
+    promises.push(ImagesToVideo.convertImagesToVideo(files[group], options.output, group + '.mp4', options.fps, options.interpolate_fps));
+  }
+
+  // Satisfy all promises.
+  return Promise.all(promises).then((otherVideos) => {
+    if(Array.isArray(otherVideos)) {
+      _videos = videos.concat(otherVideos);
+    }
+
+    return (!renderGroups.length) ? _videos : batchedRender(maxParallel, files, renderGroups, _videos);
+  });
+}
+
+
 
 if(!options.directory) {
   console.log("Please provide a valid search directory.");
@@ -31,12 +70,7 @@ if(!options.directory) {
   FileSorter.fetchGroupedImages(options.directory).then((files) => {
       cache.setGroupedFiles(files);
       return cache.getGroupsNeedingRendering(files).then((renderGroups) => {
-        var promises = [];
-        for(var group of renderGroups) {
-          promises.push(ImagesToVideo.convertImagesToVideo(files[group], options.output, group + '.mp4', options.fps, options.interpolate_fps));
-        }
-
-        return Promise.all(promises);
+        return batchedRender(options.parallel, files, renderGroups);
       });
     })
     .then((videos) => {
