@@ -5,6 +5,7 @@ const FileSorter = require('./FileSorter');
 const ImagesToVideo = require('./ImagesToVideo');
 const CacheChecker = require('./CacheChecker');
 const getUsage = require('command-line-usage');
+const fs = require('fs');
 
 // Define the allowed command line arguments.
 const optionDefinitions = [
@@ -83,21 +84,23 @@ function batchedRender(maxParallel, files, renderGroups, _videos) {
 }
 
 /**
- * [constrictGroupedImagesToDate description]
- * @param  {Array} files The video image files to operate upon.
+ * Prunes a image file array so that it is within the start and end dates, as
+ * specified by the options.
+ * @param {Array} files The video image files to operate upon.
+ * @param {!String?} startDate The starting date string.
+ * @param {!String?} endDate The ending date string.
  */
-function constrictGroupedImagesToDate(files) {
-
+function constrictGroupedImagesToDate(startDate, endDate, files) {
   // Calculate the starting time of the timelapse.
-  if(options.start_date) {
-    var startTime = Date.parse(options.start_date)
-    console.log(`Using start date ${options.start_date} -> ${startTime}`);
+  if(startDate) {
+    var startTime = Date.parse(startDate)
+    console.log(`Using start date ${startDate} -> ${startTime}`);
   }
 
   // Calculate the ending time of the timelapse.
-  if(options.end_date) {
-    var endTime = Date.parse(options.end_date);
-    console.log(`Using end date ${options.end_date} -> ${endTime}`);
+  if(endDate) {
+    var endTime = Date.parse(endDate);
+    console.log(`Using end date ${endDate} -> ${endTime}`);
   }
 
   // Prune the unneeded file groups from our file array.
@@ -111,6 +114,16 @@ function constrictGroupedImagesToDate(files) {
   }
 }
 
+/**
+ * Synchronously ensures the output directory.
+ * @param  {String} outputDirectory The output directory to create if it does not exist.
+ */
+function ensureOutputDirectorySync(outputDirectory) {
+  if (!fs.existsSync(outputDirectory)){
+      fs.mkdirSync(outputDirectory);
+  }
+}
+
 if(!options.directory) {
   console.log('Please provide a valid search directory.');
 } else {
@@ -118,30 +131,41 @@ if(!options.directory) {
   console.log(`Video FPS: ${options.fps} fps`);
   console.log(`Search directory: ${options.directory}`);
   console.log(`Output directory: ${options.output}`);
+  ensureOutputDirectorySync(options.directory);
 
   let cache = new CacheChecker.TimelapseCache(options);
   let startTime = (new Date()).getTime();
 
   FileSorter.fetchGroupedImages(options.directory).then((files) => {
-      constrictGroupedImagesToDate(files);
-      
+      // Take all grouped images, and prune them according to the start and
+      // ending dates, as specified by the options.
+      constrictGroupedImagesToDate(options.start_date, options.end_date, files);
+
+      // Set the grouped files in the cache.
       cache.setGroupedFiles(files);
+
+      // Check to see which of the group files need to be rendered.
       return cache.getGroupsNeedingRendering(files).then((renderGroups) => {
+        // Dispatch a batched render of the days needing rendering.
         return batchedRender(options.parallel, files, renderGroups);
       });
     })
     .then((videos) => {
+      // Check to see if anything changed, so we dont create a new timelapse
+      // when it isn't really needed.
       if(videos.length == 0) {
         console.log('All videos were cached, skipping timelapse render.');
         return;
       }
 
+      // Take all of our rendered days, and generate the timelapse video.
       return ImagesToVideo.concatenateVideos(cache.getVideoArray(), options.output, 'timelapse.mp4').then(() => {
         let endTime = (new Date()).getTime();
         console.log(`Rendering complete, total time: ${endTime - startTime} ms.`);
       });
     })
     .then(() => {
+      // Write the cache file after everything is said and done :).
       return cache.writeCacheFile();
     });
 }
