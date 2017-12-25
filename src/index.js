@@ -4,19 +4,44 @@ const commandLineArgs = require('command-line-args');
 const FileSorter = require('./FileSorter');
 const ImagesToVideo = require('./ImagesToVideo');
 const CacheChecker = require('./CacheChecker');
+const getUsage = require('command-line-usage');
 
 // Define the allowed command line arguments.
 const optionDefinitions = [
-  { name: 'directory', alias: 'd', type: String },
-  { name: 'output', alias: 'o', type: String, defaultValue: './' },
-  { name: 'interpolate_fps', alias: 'i', type: Number, defaultValue: null},
-  { name: 'fps', alias: 'f', type: Number, defaultValue: 15},
-  { name: 'ignore_cache', alias: 'c', type: Boolean},
-  { name: 'parallel', alias: 'p', type: Number, defaultValue: 10}
+  { name: 'directory', alias: 'd', type: String, description:'The input directory.' },
+  { name: 'output', alias: 'o', type: String, defaultValue: './', description:'The output directory.' },
+  { name: 'interpolate_fps', alias: 'i', type: Number, defaultValue: null, description:'Integer value representing the final output FPS. If greater than the normal fps option, interpolation will take place. This is an expensive operation.'},
+  { name: 'fps', alias: 'f', type: Number, defaultValue: 15, description:'Integer value representing the FPS output of the video. One image per frame.'},
+  { name: 'ignore_cache', alias: 'c', type: Boolean, description:'Boolean value determining if the cache should be ignored.'},
+  { name: 'parallel', alias: 'p', type: Number, defaultValue: 10, description:'Integer value describing the maximum parallel videos that can be created.'},
+  { name: 'help', alias: 'h', type: Boolean, description:'Displays the help for this command line tool.'}
 ];
 
-// Parse the command line arguments into an object.
+// Pull in the options.
 const options = commandLineArgs(optionDefinitions);
+
+// Check to see if the options should be printed out.
+if(options.help || process.argv.length <= 2) {
+  // Generate the usage documentation.
+  const usage = getUsage([
+    {
+      header: 'Node.js Command Line Timelapse Stitcher',
+      content: 'This is a command line interface that works with a pre-installed ' +
+      'version of ffmpeg. It is useful for optimally and easily stitching together ' +
+      'many images into one big timelapse.'
+    },
+    {
+      header: 'Options',
+      optionList: optionDefinitions
+    },
+    {
+      content: 'Project home: [underline]{https://github.com/malbanese/node-cli-timelapse-stitcher}'
+    }
+  ])
+
+  console.log(usage);
+  return;
+}
 
 /**
  * Batched render that returns a promise that processes videos in batches.
@@ -57,7 +82,7 @@ function batchedRender(maxParallel, files, renderGroups, _videos) {
 
 
 if(!options.directory) {
-  console.log("Please provide a valid search directory.");
+  console.log('Please provide a valid search directory.');
 } else {
   console.log(`Frame interpolation: ${options.interpolate_fps} fps`);
   console.log(`Video FPS: ${options.fps} fps`);
