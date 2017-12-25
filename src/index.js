@@ -17,8 +17,8 @@ const optionDefinitions = [
   { name: 'parallel', alias: 'p', type: Number, defaultValue: 10, description:'Integer value describing the maximum parallel videos that can be created.'},
   { name: 'help', alias: 'h', type: Boolean, description:'Displays the help for this command line tool.'},
   { name: 'start_date', alias: 's', type: String, description:'Starting date of the timelapse in the standard RFC2822 format. Must start at 0:00 on the day. Example (MM-DD-YY).'},
-  { name: 'end_date', alias: 'e', type: String, description:'Ending date of the timelapse in the standard RFC2822 format. Must start at 0:00 on the day. Not inclusive. Example (MM-DD-YY).'}
-
+  { name: 'end_date', alias: 'e', type: String, description:'Ending date of the timelapse in the standard RFC2822 format. Must start at 0:00 on the day. Not inclusive. Example (MM-DD-YY).'},
+  { name: 'timelapse_file', alias: 't', type: String, defaultValue: 'timelapse.mp4', description:'The output file for the timelapse video.'}
 ];
 
 // Pull in the options.
@@ -159,7 +159,8 @@ if(!options.directory) {
       }
 
       // Take all of our rendered days, and generate the timelapse video.
-      return ImagesToVideo.concatenateVideos(cache.getVideoArray(), options.output, 'timelapse.mp4').then(() => {
+      console.log(options.timelapse_file);
+      return ImagesToVideo.concatenateVideos(cache.getVideoArray(), options.output, options.timelapse_file).then(() => {
         let endTime = (new Date()).getTime();
         console.log(`Rendering complete, total time: ${endTime - startTime} ms.`);
       });
