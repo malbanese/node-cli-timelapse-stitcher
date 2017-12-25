@@ -2,14 +2,11 @@
 
 Node.js Command Line Timelapse Stitcher
 
-
   This is a command line interface that works with a pre-installed version of
   ffmpeg. It is useful for optimally and easily stitching together many images
   into one big timelapse.
 
-
 Options
-
 
   -d, --directory string         The input directory.
 
@@ -29,5 +26,11 @@ Options
 
   -h, --help                     Displays the help for this command line tool.
 
+  -s, --start_date string        Starting date of the timelapse in the standard RFC2822
+                                 format. Must start at 0:00 on the day. Example (MM-DD-YY).
+
+  -e, --end_date string          Ending date of the timelapse in the standard RFC2822 format.
+                                 Must start at 0:00 on the day. Not inclusive. Example (MM-DD-
+                                 YY).
 
   Project home: https://github.com/malbanese/node-cli-timelapse-stitcher
