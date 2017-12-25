@@ -1,5 +1,8 @@
 # node-cli-timelapse-stitcher
 
+Example Rendered Video:
+https://www.instagram.com/p/Bbfhi6XjSFm/
+
 Node.js Command Line Timelapse Stitcher
 
   This is a command line interface that works with a pre-installed version of
